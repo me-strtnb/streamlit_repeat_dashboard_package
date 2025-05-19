@@ -1,6 +1,6 @@
-
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 
 st.set_page_config(page_title="定期継続分析ダッシュボード", layout="wide")
 st.title("📦 定期継続分析ダッシュボード")
@@ -43,31 +43,28 @@ if uploaded_file:
     base_grouped["定期回数"] = base_grouped["定期回数"].astype(str) + "回目"
     base_grouped = base_grouped.rename(columns={"初回月": "初回購入月"})
 
-    # 表示対象月選択
-    unique_months = base_grouped["初回購入月"].unique().tolist()
-    selected_month = st.selectbox("表示する初回購入月を選択", ["すべて表示"] + unique_months[::-1])
+    # 初回購入月のカレンダー形式フィルタ
+    min_month = df["注文月"].min()
+    max_month = df["注文月"].max()
+
+    st.markdown("#### 📅 表示する初回購入月の範囲を選択")
+    start_date, end_date = st.date_input(
+        "初回購入月の期間を選択してください",
+        value=(datetime.strptime(min_month, "%Y-%m"), datetime.strptime(max_month, "%Y-%m")),
+        format="YYYY-MM",
+    )
+
+    start_month = start_date.strftime("%Y-%m")
+    end_month = end_date.strftime("%Y-%m")
+
+    # フィルタ適用
+    filtered_grouped = base_grouped[
+        (base_grouped["初回購入月"] >= start_month) &
+        (base_grouped["初回購入月"] <= end_month)
+    ]
 
     st.markdown("### 📈 分析結果")
-
-    if selected_month == "すべて表示":
-        # 全体の定期回数ごとの合計（初回購入月を無視して合算）
-        all_df = df.copy()
-        grouped_all = all_df.groupby("定期回数").agg(
-            ユーザー数=("顧客番号", "nunique"),
-            売上=("合計", "sum")
-        ).reset_index()
-
-        grouped_all = grouped_all.sort_values(by="定期回数")
-        grouped_all["前回ユーザー数"] = grouped_all["ユーザー数"].shift(1)
-        grouped_all["継続率"] = grouped_all["ユーザー数"] / grouped_all["前回ユーザー数"]
-        grouped_all.loc[grouped_all["定期回数"] == 1, "継続率"] = None
-        grouped_all["継続率"] = grouped_all["継続率"].apply(lambda x: f"{x:.2%}" if pd.notnull(x) else "-")
-        grouped_all["売上"] = grouped_all["売上"].apply(lambda x: f"¥{int(x):,}")
-        grouped_all["定期回数"] = grouped_all["定期回数"].astype(str) + "回目"
-
-        st.dataframe(grouped_all[["定期回数", "ユーザー数", "売上", "継続率"]].reset_index(drop=True), use_container_width=True)
-    else:
-        st.dataframe(
-            base_grouped[base_grouped["初回購入月"] == selected_month][["定期回数", "ユーザー数", "売上", "継続率"]].reset_index(drop=True),
-            use_container_width=True
-        )
+    st.dataframe(
+        filtered_grouped[["初回購入月", "定期回数", "ユーザー数", "売上", "継続率"]].reset_index(drop=True),
+        use_container_width=True
+    )
