@@ -43,23 +43,20 @@ if uploaded_file:
     base_grouped["定期回数"] = base_grouped["定期回数"].astype(str) + "回目"
     base_grouped = base_grouped.rename(columns={"初回月": "初回購入月"})
 
-    # 初回購入月のカレンダー形式フィルタ
+    # カレンダー形式の範囲指定
     st.markdown("#### 📅 表示する初回購入月の範囲を選択")
 
     min_month = df["注文月"].min()
     max_month = df["注文月"].max()
 
-    # 日付に変換
     min_date = datetime.strptime(min_month, "%Y-%m")
     max_date = datetime.strptime(max_month, "%Y-%m")
 
-    # 日付範囲選択
     date_range = st.date_input(
         "初回購入月の期間を選択してください",
         value=(min_date, max_date),
         min_value=min_date,
         max_value=max_date,
-        format="YYYY-MM",
         type="range"
     )
 
