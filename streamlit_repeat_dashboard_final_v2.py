@@ -44,27 +44,40 @@ if uploaded_file:
     base_grouped = base_grouped.rename(columns={"初回月": "初回購入月"})
 
     # 初回購入月のカレンダー形式フィルタ
+    st.markdown("#### 📅 表示する初回購入月の範囲を選択")
+
     min_month = df["注文月"].min()
     max_month = df["注文月"].max()
 
-    st.markdown("#### 📅 表示する初回購入月の範囲を選択")
-    start_date, end_date = st.date_input(
+    # 日付に変換
+    min_date = datetime.strptime(min_month, "%Y-%m")
+    max_date = datetime.strptime(max_month, "%Y-%m")
+
+    # 日付範囲選択
+    date_range = st.date_input(
         "初回購入月の期間を選択してください",
-        value=(datetime.strptime(min_month, "%Y-%m"), datetime.strptime(max_month, "%Y-%m")),
+        value=(min_date, max_date),
+        min_value=min_date,
+        max_value=max_date,
         format="YYYY-MM",
+        type="range"
     )
 
-    start_month = start_date.strftime("%Y-%m")
-    end_month = end_date.strftime("%Y-%m")
+    if isinstance(date_range, tuple) and len(date_range) == 2:
+        start_date, end_date = date_range
+        start_month = start_date.strftime("%Y-%m")
+        end_month = end_date.strftime("%Y-%m")
 
-    # フィルタ適用
-    filtered_grouped = base_grouped[
-        (base_grouped["初回購入月"] >= start_month) &
-        (base_grouped["初回購入月"] <= end_month)
-    ]
+        # フィルタ適用
+        filtered_grouped = base_grouped[
+            (base_grouped["初回購入月"] >= start_month) &
+            (base_grouped["初回購入月"] <= end_month)
+        ]
 
-    st.markdown("### 📈 分析結果")
-    st.dataframe(
-        filtered_grouped[["初回購入月", "定期回数", "ユーザー数", "売上", "継続率"]].reset_index(drop=True),
-        use_container_width=True
-    )
+        st.markdown("### 📈 分析結果")
+        st.dataframe(
+            filtered_grouped[["初回購入月", "定期回数", "ユーザー数", "売上", "継続率"]].reset_index(drop=True),
+            use_container_width=True
+        )
+    else:
+        st.warning("有効な日付範囲を選択してください。")
