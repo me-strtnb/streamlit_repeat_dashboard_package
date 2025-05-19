@@ -43,25 +43,25 @@ if uploaded_file:
     base_grouped["定期回数"] = base_grouped["定期回数"].astype(str) + "回目"
     base_grouped = base_grouped.rename(columns={"初回月": "初回購入月"})
 
-    # カレンダー形式の範囲指定
+    # 初回購入月のフィルタ（安全な fallback 形式）
     st.markdown("#### 📅 表示する初回購入月の範囲を選択")
 
     min_month = df["注文月"].min()
     max_month = df["注文月"].max()
 
-    min_date = datetime.strptime(min_month, "%Y-%m")
-    max_date = datetime.strptime(max_month, "%Y-%m")
+    try:
+        min_date = datetime.strptime(min_month, "%Y-%m")
+        max_date = datetime.strptime(max_month, "%Y-%m")
+    except Exception as e:
+        st.error(f"⛔ 日付の変換に失敗しました: {e}")
+        st.stop()
 
-    date_range = st.date_input(
-        "初回購入月の期間を選択してください",
-        value=(min_date, max_date),
-        min_value=min_date,
-        max_value=max_date,
-        type="range"
-    )
+    start_date = st.date_input("開始月", value=min_date, min_value=min_date, max_value=max_date)
+    end_date = st.date_input("終了月", value=max_date, min_value=min_date, max_value=max_date)
 
-    if isinstance(date_range, tuple) and len(date_range) == 2:
-        start_date, end_date = date_range
+    if start_date > end_date:
+        st.warning("⚠️ 開始月は終了月より前である必要があります。")
+    else:
         start_month = start_date.strftime("%Y-%m")
         end_month = end_date.strftime("%Y-%m")
 
@@ -76,5 +76,3 @@ if uploaded_file:
             filtered_grouped[["初回購入月", "定期回数", "ユーザー数", "売上", "継続率"]].reset_index(drop=True),
             use_container_width=True
         )
-    else:
-        st.warning("有効な日付範囲を選択してください。")
